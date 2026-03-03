@@ -1,0 +1,38 @@
+body{
+    font-family: Arial;
+    background:#f2f2f2;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    max-width:400px;
+    margin:auto;
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+
+video, img{
+    width:100%;
+    margin-top:10px;
+    border-radius:10px;
+}
+
+button{
+    margin:8px 0;
+    padding:10px;
+    width:100%;
+    cursor:pointer;
+}
+
+.valido{
+    color:green;
+    font-weight:bold;
+}
+
+.no-valido{
+    color:red;
+    font-weight:bold;
+}

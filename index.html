@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Validador de billetes</title>
+</head>
+<body>
+
+<div class="container">
+<h2>Validador Automático 10 Bs</h2>
+
+<input type="file" accept="image/*" id="fileInput">
+
+<button id="btnCamara">📷 Activar Cámara</button>
+<video id="video" autoplay style="display:none;"></video>
+<button id="btnFoto" style="display:none;">Tomar Foto</button>
+
+<img id="preview">
+
+<button id="btnAnalizar">🔎 Analizar</button>
+
+<p id="resultado"></p>
+<p id="textoDetectado"></p>
+
+</div>
+</body>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+
+let imagenActual = null;
+let stream = null;
+
+const video = document.getElementById("video");
+const preview = document.getElementById("preview");
+const btnCamara = document.getElementById("btnCamara");
+const btnFoto = document.getElementById("btnFoto");
+const btnAnalizar = document.getElementById("btnAnalizar");
+
+// Subir imagen
+document.getElementById("fileInput").addEventListener("change", function(e){
+    const reader = new FileReader();
+    reader.onload = function(){
+        imagenActual = reader.result;
+        preview.src = imagenActual;
+    }
+    if(e.target.files[0]){
+        reader.readAsDataURL(e.target.files[0]);
+    }
+});
+
+// Activar cámara
+btnCamara.addEventListener("click", async function(){
+
+    try{
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        video.style.display = "block";
+        btnFoto.style.display = "block";
+    }catch(error){
+        alert("No se pudo acceder a la cámara.");
+        console.log(error);
+    }
+
+});
+
+// Tomar foto
+btnFoto.addEventListener("click", function(){
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video,0,0);
+
+    imagenActual = canvas.toDataURL("image/png");
+    preview.src = imagenActual;
+
+    if(stream){
+        stream.getTracks().forEach(track => track.stop());
+    }
+
+    video.style.display = "none";
+    btnFoto.style.display = "none";
+});
+
+// Analizar
+btnAnalizar.addEventListener("click", function(){
+
+    if(!imagenActual){
+        alert("Primero sube o toma una foto.");
+        return;
+    }
+
+    if(typeof Tesseract === "undefined"){
+        alert("Tesseract no se cargó. Verifica conexión a internet.");
+        return;
+    }
+
+    document.getElementById("resultado").innerHTML = "⏳ Analizando...";
+    document.getElementById("resultado").className = "";
+
+    Tesseract.recognize(imagenActual, 'spa')
+    .then(({ data: { text } }) => {
+
+        const texto = text.toUpperCase();
+
+        document.getElementById("textoDetectado").innerHTML =
+            "<strong>Texto detectado:</strong><br>" + texto;
+
+        validarBillete(texto);
+
+    }).catch(error=>{
+        console.log(error);
+        alert("Error al analizar.");
+    });
+
+});
+
+// Validación
+function validarBillete(texto){
+
+    const resultado = document.getElementById("resultado");
+
+    // Normalizar texto
+    texto = texto.replace(/[^A-Z0-9]/g, "");
+
+    // Detectar posibles variantes de 10 mal leídas
+    const posibles10 = ["10", "1O", "IO", "LO"];
+
+    const es10 = posibles10.some(v => texto.includes(v));
+
+    // Detectar serie real (letra + 7 u 8 números)
+    const regexSerie = /([A-Z])\d{7,8}/;
+    const match = texto.match(regexSerie);
+
+    if(!es10){
+        resultado.innerHTML = "❌ No se detecta claramente 10 Bs";
+        resultado.className = "no-valido";
+        return;
+    }
+
+    if(!match){
+        resultado.innerHTML = "❌ No se detectó serie válida";
+        resultado.className = "no-valido";
+        return;
+    }
+
+    const serieDetectada = match[1];
+
+    if(serieDetectada === "B"){
+        resultado.innerHTML = "❌ No válido (Serie B)";
+        resultado.className = "no-valido";
+    }else{
+        resultado.innerHTML = "✅ Válido (Serie " + serieDetectada + ")";
+        resultado.className = "valido";
+    }
+}
+
+});
+</script>
+<script src="tesseract.min.js"></script>
+</html>
