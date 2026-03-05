@@ -124,41 +124,52 @@ function validarBillete(texto){
 
     const resultado = document.getElementById("resultado");
 
-    // Normalizar texto
-    texto = texto.replace(/[^A-Z0-9]/g, "");
+    texto = texto.toUpperCase();
 
-    // Detectar posibles variantes de 10 mal leídas
-    const posibles10 = ["10", "1O", "IO", "LO"];
+    // limpiar saltos de línea
+    texto = texto.replace(/\n/g," ");
 
+    // detectar 10 Bs
+    const posibles10 = ["10","1O","IO","LO"];
     const es10 = posibles10.some(v => texto.includes(v));
 
-    // Detectar serie real (letra + 7 u 8 números)
-    const regexSerie = /([A-Z])\d{7,8}/;
-    const match = texto.match(regexSerie);
-
     if(!es10){
-        resultado.innerHTML = "❌ No se detecta claramente 10 Bs";
+        resultado.innerHTML = "❌ No es billete de 10 Bs";
         resultado.className = "no-valido";
         return;
     }
 
-    if(!match){
-        resultado.innerHTML = "❌ No se detectó serie válida";
+    // buscar 8 o 9 números seguidos
+    const numeros = texto.match(/\d{8,9}/);
+
+    if(!numeros){
+        resultado.innerHTML = "❌ Serie no detectada";
         resultado.className = "no-valido";
         return;
     }
 
-    const serieDetectada = match[1];
+    const numeroSerie = numeros[0];
 
-    if(serieDetectada === "B"){
-        resultado.innerHTML = "❌ No válido (Serie B)";
+    // buscar letra A o B cerca
+    const letra = texto.match(/[AB]/);
+
+    if(!letra){
+        resultado.innerHTML = "❌ Serie no detectada";
         resultado.className = "no-valido";
-    }else{
-        resultado.innerHTML = "✅ Válido (Serie " + serieDetectada + ")";
+        return;
+    }
+
+    const serie = letra[0];
+
+    if(serie === "A"){
+        resultado.innerHTML = "✅ Billete VÁLIDO<br>Serie: "+numeroSerie+" A";
         resultado.className = "valido";
+    }else{
+        resultado.innerHTML = "❌ Billete NO válido<br>Serie: "+numeroSerie+" B";
+        resultado.className = "no-valido";
     }
-}
 
+}
 });
 </script>
 <script src="tesseract.min.js"></script>
